@@ -1,0 +1,2 @@
+Erlang WebSocket Server Implementation.
+Handshake process code is brrowd from https://github.com/MiCHiLU/erlang_websocket.
