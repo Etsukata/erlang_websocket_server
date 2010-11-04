@@ -1,17 +1,18 @@
 -module(wssv).
--export([start/0, start/1]).
+-compile(export_all).
+%-export([start/0, start/3]).
 
 -define(WEBSOCKET_PREFIX,"HTTP/1.1 101 Web Socket Protocol Handshake\r\nUpgrade: WebSocket\r\nConnection: Upgrade\r\n").
 
 -define(HEX, [{"0", 0}, {"1", 1}, {"2", 2}, {"3", 3}, {"4", 4}, {"5", 5}, {"6", 6}, {"7", 7}, {"8", 8}, {"9", 9},
               {"a", 10}, {"b", 11}, {"c", 12}, {"d", 13}, {"e", 14}, {"f", 15}]).
 
-start() -> start(fun default_echo__handler/0).
-start(Handler) -> 
+start() -> start(?MODULE, default_echo_handler, []).
+start(Module, Handler, Args) -> 
   {ok, ListenSocket} = gen_tcp:listen(9000, [{packet, 0}, {reuseaddr, true}, {keepalive, false}, {active, false}]),
   register(receiver, spawn(?MODULE, receiver_loop, [])),
   register(sender, spawn(?MODULE, sender_loop, [[]])),
-  register(handler, spawn(?MODULE, handler_loop, [Handler])),
+  register(handler, spawn(Module, Handler, Args)),
   accept_connect(ListenSocket).
 
 receiver_loop() ->
@@ -20,8 +21,8 @@ receiver_loop() ->
       handler ! {message, decode_frame(Frame), SocketSenderPid},
       receiver_loop();
     _Any ->
-io:format("rec"),
- receiver_loop()
+      io:format("rec"),
+      receiver_loop()
   end.
 
 default_echo_handler() ->
@@ -31,9 +32,6 @@ default_echo_handler() ->
       default_echo_handler();
     _Any -> default_echo_handler()
   end.
-
-handler_loop(Handler) ->
-  Handler().
 
 sender_loop(SocketSenderPidList) ->
   io:format("SocketSenderPidList:~w~n", [SocketSenderPidList]),

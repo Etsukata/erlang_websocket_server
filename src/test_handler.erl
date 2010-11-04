@@ -1,7 +1,8 @@
 -module(test_handler).
--export([go/0]).
+-compile(export_all).
+%-export([go/0]).
 
-go() -> wssv:start(fun test_handler/0).
+go() -> wssv:start(?MODULE, test_handler, []).
 
 test_handler() ->
   receive
