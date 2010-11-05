@@ -1,6 +1,7 @@
 -module(echo_handler).
 -compile(export_all).
-go() -> wssv:start(?MODULE, default_echo_handler, []).
+go() ->
+   websocket_server:start("localhost", 9000, ?MODULE, default_echo_handler, []).
 
 default_echo_handler() ->
   receive
