@@ -13,12 +13,21 @@ start(Module, Handler, Args) ->
   register(receiver, spawn(?MODULE, receiver_loop, [])),
   register(sender, spawn(?MODULE, sender_loop, [[]])),
   register(handler, spawn(Module, Handler, Args)),
-  accept_connect(ListenSocket).
+  accept_connect_loop(ListenSocket).
 
 receiver_loop() ->
   receive 
     {data, Frame, SocketSenderPid} ->
       handler ! {message, decode_frame(Frame), SocketSenderPid},
+      receiver_loop();
+    {open, SocketSenderPid} ->
+      handler ! {open, SocketSenderPid},
+      receiver_loop();
+    {closed, SocketSenderPid} ->
+      handler ! {closed, SocketSenderPid},
+      receiver_loop();
+    {error, PosixReason, SocketSenderPid} ->
+      handler ! {error, PosixReason, SocketSenderPid},
       receiver_loop();
     _Any ->
       io:format("rec"),
@@ -28,9 +37,12 @@ receiver_loop() ->
 default_echo_handler() ->
   receive
     {message, Data, SocketSenderPid} -> 
+      io:format("msg:~w~n", [Data]),
       sender ! {unicast, Data, SocketSenderPid},
       default_echo_handler();
-    _Any -> default_echo_handler()
+    Any -> 
+      io:format("handler:~w~n", [Any]),
+      default_echo_handler()
   end.
 
 sender_loop(SocketSenderPidList) ->
@@ -49,7 +61,9 @@ sender_loop(SocketSenderPidList) ->
       sender_loop(SocketSenderPidList);
     {closed, SocketSenderPid} ->
       sender_loop(lists:filter(fun(X) -> X /= SocketSenderPid end, SocketSenderPidList));
-    _Any -> sender_loop(SocketSenderPidList)%io:format("senderloopclosed.") 
+    _Any -> 
+%io:format("senderloop."), 
+      sender_loop(SocketSenderPidList)
   end.
 
 sendall(_Data, []) -> ok;
@@ -58,45 +72,57 @@ sendall(Data, [H|T]) ->
   sendall(Data, T).
 
 
-accept_connect(ListenSocket) ->
+accept_connect_loop(ListenSocket) ->
   {ok, Socket} = gen_tcp:accept(ListenSocket),
-  InitPid = spawn(?MODULE, init, [Socket]),
-  ok = gen_tcp:controlling_process(Socket, InitPid),
-  accept_connect(ListenSocket).
+  spawn(?MODULE, init, [Socket]),
+  accept_connect_loop(ListenSocket).
 
 init(Socket) ->
   %% Set to http packet here to do handshake
   inet:setopts(Socket, [{packet, http}]),
   ok = handshake(Socket),
-  inet:setopts(Socket, [list, {packet, raw}]),
+  inet:setopts(Socket, [list, {packet, raw}, {active, false}]),
   SocketSenderPid = spawn(?MODULE, socket_sender_loop, [Socket]),
-  SocketReceiverPid = spawn(?MODULE, socket_receiver_loop, [Socket, SocketSenderPid]),
-  ok = gen_tcp:controlling_process(Socket, SocketReceiverPid), 
-  sender ! {open, SocketSenderPid}.
+  spawn(?MODULE, socket_receiver_loop, [Socket, SocketSenderPid]),
+  sender ! {open, SocketSenderPid},
+  receiver ! {open, SocketSenderPid}.
 
 socket_receiver_loop(Socket, SocketSenderPid) ->
   case gen_tcp:recv(Socket, 0) of 
+%  receive
     {ok, Frame} ->
+%    {tcp, Socket, Frame} ->
       receiver ! {data, Frame, SocketSenderPid},
-      socket_receiver_loop;
+      socket_receiver_loop(Socket, SocketSenderPid);
     {error, closed} ->
+%    {tcp_closed, Socket} ->
       sender ! {closed, SocketSenderPid},
+      receiver ! {closed, SocketSenderPid},
       SocketSenderPid ! closed,
       gen_tcp:close(Socket);
+    {error, PosixReason} ->
+      sender ! {error, PosixReason, SocketSenderPid},
+      receiver ! {error, PosixReason, SocketSenderPid},
+      SocketSenderPid ! {error, PosixReason},
+      gen_tcp:close(Socket);
     _Any -> 
+io:format("any"),
       exit(normal)    
   end. 
 
 socket_sender_loop(Socket) -> 
   receive
     {send, Data} ->
-      gen_tcp:send(Socket, [0] ++ Data ++ [255]),
+io:format("now send:~w~n", [Data]), 
+      A = gen_tcp:send(Socket, [0] ++ Data ++ [255]),
+io:format("sent?:~w~n", [A]),
       socket_sender_loop(Socket);
     closed ->
       exit(normal);
+    {error, PosixReason} ->
+      exit(PosixReason);  %exit(PosixReason);
     _Any -> 
-io:format("sss"),
-socket_sender_loop(Socket)
+      socket_sender_loop(Socket)
   end.
 
 handshake(Socket) ->
@@ -206,7 +232,8 @@ send_handshake(Socket,Path,Headers) ->
     %         {"challenge", Challenge}, {"response", Response, binary_to_list(Response)}]]),
     gen_tcp:send(Socket, Resp),
     ok.
- 
-decode_frame([0|T]) -> decode_frame1(T).
+decode_frame([0|T]) -> decode_frame1(T);
+decode_frame(_Any) -> []. 
 decode_frame1([255]) -> [];
-decode_frame1([H|T]) -> [H|decode_frame1(T)].
+decode_frame1([H|T]) -> [H|decode_frame1(T)];
+decode_frame1(_Any) -> [].
