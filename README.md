@@ -13,7 +13,7 @@ Process Design Pattern
 
 This library has the following process design pattern.
 
-FIGURE
+see [FIGURE][4]
 
 Each socket sender and reciever are connected to a corresponding WebSocket cliend. A socket receiver receives WebSocket frames or error message and pass them to the receiver process. The receiver decode passed frames. The handler handles unframed data and errors. The sender frames handled data and sends them to the specific socket sender or broadcast to all except for the socket sender connected to source client. The sender can also send data to all socket senders.
 All you have to write is what the handler does.
@@ -33,11 +33,30 @@ Simple Echo Server
 	  end.
 
 
-General Case
+General Server
 ------------
+	-module(general_handler).
+	-compile(export_all).
+	go() ->
+	   websocket_server:start("localhost", 9000, ?MODULE, general_handler, []).
+	general_handler() ->
+	  receive
+	    {open, SocketSenderPid} ->
+		  %%do something when a connection opend.
+	    {message, Data, SocketSenderPid} -> 
+	      %%do something when the handler received data.
+		{closed, SocketSenderPid} ->
+		  %%do something when a connection closed.
+		{error, PosixReason, SocketSenderPid}
+		   %%do something when the handler received an error.
+	  end.
+
 
 Demonstration
 -------------
+
+A demonstration of a WebSocket server which uses this library.
+[http://etsukata.com/erl/cvws.html][5]
 
 Getting Started
 ---------------
@@ -45,3 +64,5 @@ Getting Started
 [1]:http://tools.ietf.org/html/draft-hixie-thewebsocketprotocol-76
 [2]:https://github.com/davebryson/erlang_websocket
 [3]:https://github.com/MiCHiLU/erlang_websocket
+[4]:http://etsukata.com/erl/pdp.jpg
+[5]:http://etsukata.com/erl/cvws.html
