@@ -2,10 +2,10 @@ Erlang_WebSocket_Server
 =======================
 
 Erlang_WebSocket_Server is a server-side implementation for the WebSocket Protocol written in Erlang.
-This library conforms to WebSocket draft-76(http://tools.ietf.org/html/draft-hixie-thewebsocketprotocol-76).The library provides efficient ways of developoing systems which use WebSocket.
+This library conforms to WebSocket [draft-76][1].The library provides efficient ways of developoing systems which use WebSocket.
 Handshake process mainly uses the code written by davebryson and ENDOH Takanao.
-davebryson:https://github.com/davebryson/erlang_websocket
-ENDOH Takano:https://github.com/MiCHiLU/erlang_websocket
+davebryson:[https://github.com/davebryson/erlang_websocket][2]
+ENDOH Takano:[https://github.com/MiCHiLU/erlang_websocket][3]
 
 Process Design Pattern
 ----------------------
@@ -40,3 +40,7 @@ Demonstration
 
 Getting Started
 ---------------
+
+[1]:http://tools.ietf.org/html/draft-hixie-thewebsocketprotocol-76
+[2]:https://github.com/davebryson/erlang_websocket
+[3]:https://github.com/MiCHiLU/erlang_websocket
