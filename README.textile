@@ -1,5 +1,4 @@
-Erlang_WebSocket_Server
-=======================
+h1. Erlang_WebSocket_Server
 
 Erlang_WebSocket_Server is a server-side implementation for the WebSocket Protocol written in Erlang.
 This library conforms to WebSocket draft-76(http://tools.ietf.org/html/draft-hixie-thewebsocketprotocol-76).The library provides efficient ways of developoing systems which use WebSocket.
@@ -7,11 +6,10 @@ Handshake process mainly uses the code written by davebryson and ENDOH Takanao.
 davebryson:https://github.com/davebryson/erlang_websocket
 ENDOH Takano:https://github.com/MiCHiLU/erlang_websocket
 
-Process Design Pattern
-----------------------
+h2. Process Design Pattern
 
 This library has the following process design pattern.
-
+<pre>
 +--------+                                             +------+
 |Socket  |--+                                      +-->|Socket|
 |Receiver|  |                                      |   |Sender|
@@ -26,12 +24,13 @@ This library has the following process design pattern.
 |Socket  |--+                                      +-->|Socket|
 |Receiver|                                             |Sender|
 +--------+                                             +------+
-
+</pre>
 
 Each socket sender and reciever are connected to a corresponding WebSocket cliend. A socket receiver receives WebSocket frames or error message and pass them to the receiver process. The receiver decode passed frames. The handler handles unframed data and errors. The sender frames handled data and sends them to the specific socket sender or broadcast to all except for the socket sender connected to source client. The sender can also send data to all socket senders.
 All you have to write is what the handler does.
 
-## Simple Echo Server ##
+h2. Simple Echo Server 
+<pre>
 -module(echo_handler).
 -compile(export_all).
 go() ->
@@ -44,10 +43,12 @@ default_echo_handler() ->
       default_echo_handler();
     _Any -> default_echo_handler()
   end.
-## General Case ##
+</pre>
+
+h2. General Case
 
 
-## Demonstration ##
+h2. Demonstration
 
-## Getting Started ##
+h2. Getting Started
 
