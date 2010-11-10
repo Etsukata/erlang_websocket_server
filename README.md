@@ -69,7 +69,7 @@ Server side:
 	git clone git://github.com/Etsukata/erlang_websocket_server.git
 	cd erlang_websocket_server/src/
 	make
-	erlc -s websocket_server start
+	erl -s websocket_server start
 Client side:
 open Chrome browser javascript console
 	var ws = new WebSocket("ws://localhost:9000");
