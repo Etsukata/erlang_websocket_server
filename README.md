@@ -45,9 +45,9 @@ General Server
 		  %%do something when a connection opend.
 	    {message, Data, SocketSenderPid} -> 
 	      %%do something when the handler received data.
-		{closed, SocketSenderPid} ->
+	    {closed, SocketSenderPid} ->
 		  %%do something when a connection closed.
-		{error, PosixReason, SocketSenderPid}
+	    {error, PosixReason, SocketSenderPid}
 		  %%do something when the handler received an error.
 	  end.
 
@@ -58,8 +58,24 @@ Demonstration
 A demonstration of a WebSocket server which uses this library.
 [http://etsukata.com/erl/cvws.html][5]
 
+Requirements
+------------
+
+Erlang R14B or greater.
+
 Getting Started
 ---------------
+Server side:
+	git clone git://github.com/Etsukata/erlang_websocket_server.git
+	cd erlang_websocket_server/src/
+	make
+	erlc -s websocket_server start
+Client side:
+open Chrome browser javascript console
+	var ws = new WebSocket("ws://localhost:9000");
+	ws.onmessage = function(m) { console.log(m) };
+	ws.send("hello");
+
 
 [1]:http://tools.ietf.org/html/draft-hixie-thewebsocketprotocol-76
 [2]:https://github.com/davebryson/erlang_websocket
