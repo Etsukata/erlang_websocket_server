@@ -10,7 +10,12 @@ test_handler(IDList, PointList) ->
       ID = integer_to_list(erlang:phash2(SocketSenderPid)),
       sender ! {broadcast, "@NC:" ++ ID, SocketSenderPid},
       sender ! {unicast, "@ID:" ++ ID, SocketSenderPid},
-      sender ! {unicast, "@PT:" ++ ID, SocketSenderPid},
+      StrIDList = lists:foldr(fun(X, Xs) -> X ++ "," ++ Xs end, "", IDList),
+      Str = case StrIDList of 
+              []   -> [];
+              _Any -> lists:sublist(StrIDList, length(StrIDList) -1)
+            end,
+      sender ! {unicast, "@PT:" ++ Str, SocketSenderPid},
       lists:foreach(fun(X) -> sender ! {unicast, X, SocketSenderPid} end, lists:reverse(PointList)),
       test_handler([ID|IDList], PointList);
     {message, Data, SocketSenderPid} ->
