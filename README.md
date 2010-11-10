@@ -15,7 +15,7 @@ This library has the following process design pattern.
 
 see [FIGURE][4]
 
-Each socket sender and reciever are connected to a corresponding WebSocket cliend. A socket receiver receives WebSocket frames or error message and pass them to the receiver process. The receiver decode passed frames. The handler handles unframed data and errors. The sender frames handled data and sends them to the specific socket sender or broadcast to all except for the socket sender connected to source client. The sender can also send data to all socket senders.
+Each socket sender and reciever are connected to a corresponding WebSocket client. A socket receiver receives WebSocket frames or error message and pass them to the receiver process. The receiver decode passed frames. The handler handles unframed data and errors. The sender frames handled data and sends them to the specific socket sender or broadcast to all except for the socket sender connected to source client. The sender can also send data to all socket senders.
 All you have to write is what the handler does.
 
 Simple Echo Server 
@@ -48,7 +48,7 @@ General Server
 		{closed, SocketSenderPid} ->
 		  %%do something when a connection closed.
 		{error, PosixReason, SocketSenderPid}
-		   %%do something when the handler received an error.
+		  %%do something when the handler received an error.
 	  end.
 
 
