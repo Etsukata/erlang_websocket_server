@@ -1,6 +1,11 @@
+%%
+%%Handshake process mainly uses the code written by davebryson and ENDOH Takanao.
+%%davebryson:https://github.com/davebryson/erlang_websocket 
+%%ENDOH Takano:https://github.com/MiCHiLU/erlang_websocket
+%%
 -module(handshake).
-%-export([handshake/1]).
--compile(export_all).
+-export([handshake/1]).
+%-compile(export_all).
 -define(WEBSOCKET_PREFIX,"HTTP/1.1 101 Web Socket Protocol Handshake\r\nUpgrade: WebSocket\r\nConnection: Upgrade\r\n").
 -define(HEX, [{"0", 0}, {"1", 1}, {"2", 2}, {"3", 3}, {"4", 4}, {"5", 5}, {"6", 6}, {"7", 7}, {"8", 8}, {"9", 9},
               {"a", 10}, {"b", 11}, {"c", 12}, {"d", 13}, {"e", 14}, {"f", 15}]).

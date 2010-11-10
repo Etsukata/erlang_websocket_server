@@ -1,14 +1,14 @@
 -module(websocket_server).
 -import(handshake, [handshake/1]).
-%-export([start/0, start/5]).
--compile(export_all).
+-export([start/0, start/5, default_echo_handler/0]).
+%-compile(export_all).
 
-start() -> start("etsukata.com", 9000, ?MODULE, default_echo_handler, []).
+start() -> start("localhost", 9000, ?MODULE, default_echo_handler, []).
 start(Host, Port, Module, Handler, Args) -> 
   {ok, IPaddress} = inet:getaddr(Host, inet),
   {ok, ListenSocket} = gen_tcp:listen(Port, [{ip, IPaddress}, {packet, 0}, {reuseaddr, true}, {keepalive, false}, {active, false}]),
-  register(receiver, spawn(?MODULE, receiver_loop, [])),
-  register(sender, spawn(?MODULE, sender_loop, [[]])),
+  register(receiver, spawn(fun() -> receiver_loop() end)),
+  register(sender, spawn(fun() -> sender_loop([]) end)),
   register(handler, spawn(Module, Handler, Args)),
   accept_connect_loop(ListenSocket).
 
@@ -66,7 +66,7 @@ sendall(Data, [H|T]) ->
 
 accept_connect_loop(ListenSocket) ->
   {ok, Socket} = gen_tcp:accept(ListenSocket),
-  spawn(?MODULE, init, [Socket]),
+  spawn(fun() ->  init(Socket) end),
   accept_connect_loop(ListenSocket).
 
 init(Socket) ->
@@ -74,8 +74,8 @@ init(Socket) ->
   inet:setopts(Socket, [{packet, http}]),
   ok = handshake(Socket),
   inet:setopts(Socket, [list, {packet, raw}, {active, false}]),
-  SocketSenderPid = spawn(?MODULE, socket_sender_loop, [Socket]),
-  spawn(?MODULE, socket_receiver_loop, [Socket, SocketSenderPid]),
+  SocketSenderPid = spawn(fun() -> socket_sender_loop(Socket) end),
+  spawn(fun() -> socket_receiver_loop(Socket, SocketSenderPid) end),
   sender ! {open, SocketSenderPid},
   receiver ! {open, SocketSenderPid}.
 
