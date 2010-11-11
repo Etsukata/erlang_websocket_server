@@ -1,0 +1,115 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"> 
+<html xmlns:fn="http://www.w3.org/2005/02/xpath-functions"> 
+<head> 
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"> 
+<link rel="stylesheet" href="doc.css" type="text/css"> 
+<title>Erlang -- websocket_server</title> 
+</head> 
+<body bgcolor="white" text="#000000" link="#0000ff" vlink="#ff00ff" alink="#ff0000"><div id="container">
+
+<div class="innertube">
+<!-- refpage --><center><h1>websocket_server</h1></center>
+  
+  <h3>MODULE</h3>
+<div class="REFBODY">websocket_server</div>
+  <h3>MODULE SUMMARY</h3>
+<div class="REFBODY"> Server-side implementation for the WebSocket Protocol</div>
+  <h3>DESCRIPTION</h3>
+<div class="REFBODY"><p>
+    </p><p>The <span class="code">websocket_server</span> module provides functions for communicating
+      using the WebSocket protocol.</p>
+    <p>The following code fragment provides a simple example of 
+      a echo server:</p>
+    <div class="example"><pre>-module(echo_handler).
+-compile(export_all).
+-import(websocket_server, [unicast/2]).
+go() ->
+   websocket_server:start("localhost", 9000, ?MODULE, default_echo_handler, []).
+default_echo_handler() ->
+  receive
+    {message, Data, ConnectionID} -> 
+      unicast(Data, ConnectionID),
+      default_echo_handler();
+    _Any -> default_echo_handler()
+  end.</pre></div>
+
+  <p></p></div>
+  <h3><a name="id114214">DATA TYPES</a></h3>
+<div class="REFBODY">
+    
+    <div class="example"><pre>ip_address()
+  see inet(3)</pre></div>
+  </div>
+  <h3>EXPORTS</h3>
+    <p><a name="start"><span class="bold_code">start() -&gt; void()</span></a><br></p>
+<div class="REFBODY">
+<p>Types:</p>
+</div>
+<div class="REFBODY"><p>
+        </p><p>Starts the WebSocket simple echo server. This function calls <span class="code">start("localhost", 9000, ?MODULE, default_echo_handler, [])</span>. </p>
+      <p></p></div>
+    <p><a name="start"><span class="bold_code">start(Host, Port, Module, Handler, Args) -&gt; void()</span></a><br></p>
+<div class="REFBODY">
+<p>Types:</p>
+<div class="REFTYPES">
+<span class="bold_code">Host = ip_address() | string() | atom()</span><br>
+</div>
+<div class="REFTYPES">
+<span class="bold_code">Port = 0..65535</span><br>
+</div>
+<div class="REFTYPES">
+<span class="bold_code">Module = Handler = atom()</span><br>
+</div>
+<div class="REFTYPES">
+<span class="bold_code">Args = [term()]</span><br>
+</div>
+</div>
+<div class="REFBODY"><p>
+        </p><p>Starts the WebSocket server on port <span class="code">Port</span> as host <span class="code">Host</span>, handler <span class="code">Module:Handler</span> with args <span class="code">Args</span>. </p>
+      <p></p></div>
+    <p><a name="start"><span class="bold_code">unicast(Data, ConnectionID) -&gt; void()</span></a><br></p>
+<div class="REFBODY">
+<p>Types:</p>
+<div class="REFTYPES">
+<span class="bold_code">Data = string()</span><br>
+</div>
+<div class="REFTYPES">
+<span class="bold_code">ConnectionID = string()</span><br>
+</div>
+</div>
+<div class="REFBODY"><p>
+        </p><p>Send the data <span class="code">Data</span> to the client whose id is <span class="code">ConnectionID</span>.</p>
+      <p></p></div>
+
+    <p><a name="start"><span class="bold_code">broadcast(Data, ConnectionID) -&gt; void()</span></a><br></p>
+<div class="REFBODY">
+<p>Types:</p>
+<div class="REFTYPES">
+<span class="bold_code">Data = string()</span><br>
+</div>
+<div class="REFTYPES">
+<span class="bold_code">ConnectionID = string()</span><br>
+</div>
+</div>
+<div class="REFBODY"><p>
+        </p><p>Send the data <span class="code">Data</span> to all the clients excluding the one whose id is <span class="code">ConnectionID</span>.</p>
+      <p></p></div>
+
+    <p><a name="start"><span class="bold_code">sendall(Data) -&gt; void()</span></a><br></p>
+<div class="REFBODY">
+<p>Types:</p>
+<div class="REFTYPES">
+<span class="bold_code">Data = string()</span><br>
+</div>
+</div>
+<div class="REFBODY"><p>
+        </p><p>Send the data <span class="code">Data</span> to all the clients connected.</p>
+      <p></p></div>
+
+</div>
+</div>
+<div class="footer">
+<hr>
+<p>Copyright 2010 Eiichi Tsukata. All Rights Reserved.</p>
+</div>
+</body></html>
