@@ -22,12 +22,13 @@ Simple Echo Server
 ------------------
 	-module(echo_handler).
 	-compile(export_all).
+	-import(websocket_server, [unicast/2]).
 	go() ->
 	   websocket_server:start("localhost", 9000, ?MODULE, default_echo_handler, []).
 	default_echo_handler() ->
 	  receive
-	    {message, Data, SocketSenderPid} -> 
-	      sender ! {unicast, Data, SocketSenderPid},
+	    {message, Data, ConnectionID} -> 
+	      unicast(Data, ConnectionID),
 	      default_echo_handler();
 	    _Any -> default_echo_handler()
 	  end.
@@ -36,19 +37,21 @@ Simple Echo Server
 General Server
 ------------
 	-module(general_handler).
+	-import(websocket_server, [unicast/2, broadcast/2, sendall/1]).
 	-compile(export_all).
+	
 	go() ->
 	   websocket_server:start("localhost", 9000, ?MODULE, general_handler, []).
 	general_handler() ->
 	  receive
 	    {open, SocketSenderPid} ->
-		  %%do something when a connection opend.
+		%%do something when a connection opend.
 	    {message, Data, SocketSenderPid} -> 
-	      %%do something when the handler received data.
+		%%do something when the handler received data.
 	    {closed, SocketSenderPid} ->
-		  %%do something when a connection closed.
+		%%do something when a connection closed.
 	    {error, PosixReason, SocketSenderPid}
-		  %%do something when the handler received an error.
+		%%do something when the handler received an error.
 	  end.
 
 
