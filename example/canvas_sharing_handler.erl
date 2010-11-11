@@ -1,42 +1,40 @@
 -module(canvas_sharing_handler).
+-import(websocket_server, [unicast/2, broadcast/2, sendall/1]).
 -compile(export_all).
-%-export([go/0]).
 
-go() -> websocket_server:start("etsukata.com", 9000, ?MODULE, test_handler, [[],[]]).
+go() -> websocket_server:start("etsukata.com", 9000, ?MODULE, canvas_sharing_handler, [[],[]]).
 
-test_handler(IDList, PointList) ->
+canvas_sharing_handler(IDList, PointList) ->
   receive
-    {open, SocketSenderPid} ->
-      ID = integer_to_list(erlang:phash2(SocketSenderPid)),
-      sender ! {broadcast, "@NC:" ++ ID, SocketSenderPid},
-      sender ! {unicast, "@ID:" ++ ID, SocketSenderPid},
+    {open, ConnectionID} ->
+      broadcast("@NC:" ++ ConnectionID, ConnectionID),
+      unicast("@ID:" ++ ConnectionID, ConnectionID),
       StrIDList = lists:foldr(fun(X, Xs) -> X ++ "," ++ Xs end, "", IDList),
       Str = case StrIDList of 
               []   -> [];
               _Any -> lists:sublist(StrIDList, length(StrIDList) -1)
             end,
-      sender ! {unicast, "@PT:" ++ Str, SocketSenderPid},
-      lists:foreach(fun(X) -> sender ! {unicast, X, SocketSenderPid} end, lists:reverse(PointList)),
-      test_handler([ID|IDList], PointList);
-    {message, Data, SocketSenderPid} ->
+      unicast("@PT:" ++ Str, ConnectionID),
+      lists:foreach(fun(X) -> unicast(X, ConnectionID) end, lists:reverse(PointList)),
+      canvas_sharing_handler([ConnectionID|IDList], PointList);
+    {message, Data, ConnectionID} ->
       case lists:member($@, Data) of 
         true -> 
           case string:substr(Data, 1, 3) of 
             "@CU" ->
-              sender ! {broadcast, Data, SocketSenderPid},
-              test_handler(IDList, []);
+              broadcast(Data, ConnectionID),
+              canvas_sharing_handler(IDList, []);
             _Any ->
-              test_handler(IDList, PointList)
+              canvas_sharing_handler(IDList, PointList)
           end;
         false ->
-          sender ! {broadcast, Data, SocketSenderPid},
-          test_handler(IDList, [Data|PointList])
+          broadcast(Data, ConnectionID),
+          canvas_sharing_handler(IDList, [Data|PointList])
       end;
-    {closed, SocketSenderPid} ->
-      ID = integer_to_list(erlang:phash2(SocketSenderPid)), 
-      sender ! {broadcast, "@CL:" ++ ID, SocketSenderPid},
-      test_handler(lists:delete(ID,IDList), PointList);
+    {closed, ConnectionID} ->
+      broadcast("@CL:" ++ ConnectionID, ConnectionID),
+      canvas_sharing_handler(lists:delete(ConnectionID,IDList), PointList);
     Any ->
-io:format("Any:~w~n", [Any]),     
- test_handler(IDList, PointList)
+      io:format("Any:~w~n", [Any]),     
+      canvas_sharing_handler(IDList, PointList)
   end.
