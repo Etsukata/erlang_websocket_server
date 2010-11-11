@@ -1,6 +1,6 @@
 -module(websocket_server).
 -import(handshake, [handshake/1]).
--export([start/0, start/5, default_echo_handler/0]).
+-export([start/0, start/5, default_echo_handler/0, unicast/2, broadcast/2, sendall/1]).
 %-compile(export_all).
 
 start() -> start("localhost", 9000, ?MODULE, default_echo_handler, []).
@@ -15,16 +15,16 @@ start(Host, Port, Module, Handler, Args) ->
 receiver_loop() ->
   receive 
     {data, Frame, SocketSenderPid} ->
-      handler ! {message, decode_frame(Frame), SocketSenderPid},
+      handler ! {message, decode_frame(Frame), integer_to_list(erlang:phash2(SocketSenderPid))},
       receiver_loop();
     {open, SocketSenderPid} ->
-      handler ! {open, SocketSenderPid},
+      handler ! {open, integer_to_list(erlang:phash2(SocketSenderPid))},
       receiver_loop();
     {closed, SocketSenderPid} ->
-      handler ! {closed, SocketSenderPid},
+      handler ! {closed, integer_to_list(erlang:phash2(SocketSenderPid))},
       receiver_loop();
     {error, PosixReason, SocketSenderPid} ->
-      handler ! {error, PosixReason, SocketSenderPid},
+      handler ! {error, PosixReason, integer_to_list(erlang:phash2(SocketSenderPid))},
       receiver_loop();
     _Any ->
       receiver_loop()
@@ -32,30 +32,42 @@ receiver_loop() ->
 
 default_echo_handler() ->
   receive
-    {message, Data, SocketSenderPid} -> 
-      sender ! {unicast, Data, SocketSenderPid},
+    {message, Data, ConnectionID} -> 
+      unicast(Data, ConnectionID),
       default_echo_handler();
     _Any -> 
       default_echo_handler()
   end.
 
-sender_loop(SocketSenderPidList) ->
+unicast(Data, ConnectionID) ->
+  sender ! {unicast, Data, ConnectionID}.
+
+broadcast(Data, ConnectionID) ->
+  sender ! {broadcast, Data, ConnectionID}.
+
+sendall(Data) ->
+  sender ! {sendall, Data}.
+
+sender_loop(ConnectionIDPidList) ->
   receive
     {open, SocketSenderPid} ->
-      sender_loop([SocketSenderPid|SocketSenderPidList]);
-    {unicast, Data, SocketSenderPid} ->
+      sender_loop([{integer_to_list(erlang:phash2(SocketSenderPid)), SocketSenderPid}|ConnectionIDPidList]);
+    {unicast, Data, ConnectionID} ->
+      {_, SocketSenderPid} = lists:keyfind(ConnectionID, 1, ConnectionIDPidList),
       SocketSenderPid ! {send, Data},
-      sender_loop(SocketSenderPidList);
-    {broadcast, Data, SocketSenderPid} ->
-      sendall(Data, lists:delete(SocketSenderPid, SocketSenderPidList)),
-      sender_loop(SocketSenderPidList);
-    {sendall, Data} ->
+      sender_loop(ConnectionIDPidList);
+    {broadcast, Data, ConnectionID} ->
+      SocketSenderPidList = lists:map(fun(X) -> element(2, X) end, lists:keydelete(ConnectionID, 1, ConnectionIDPidList)),
       sendall(Data, SocketSenderPidList),
-      sender_loop(SocketSenderPidList);
+      sender_loop(ConnectionIDPidList);
+    {sendall, Data} ->
+      SocketSenderPidList = lists:map(fun(X) -> element(2, X) end, ConnectionIDPidList),
+      sendall(Data, SocketSenderPidList),
+      sender_loop(ConnectionIDPidList);
     {closed, SocketSenderPid} ->
-      sender_loop(lists:delete(SocketSenderPid, SocketSenderPidList));
+      sender_loop(lists:keydelete(SocketSenderPid, 2,ConnectionIDPidList));
     _Any -> 
-      sender_loop(SocketSenderPidList)
+      sender_loop(ConnectionIDPidList)
   end.
 
 sendall(_Data, []) -> ok;
